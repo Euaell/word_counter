@@ -6,8 +6,8 @@ const nextConfig = {
     images: {
         unoptimized: true,
     },
-    basePath: isGithub ? '/word_counter/' : '',
-    assetPrefix: isGithub ? '/word_counter/' : '',
+    basePath: isGithub ? '/word_counter' : '',
+    assetPrefix: isGithub ? '/word_counter' : '',
 };
 
 export default nextConfig;

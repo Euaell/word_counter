@@ -1,5 +1,5 @@
 /** @type {import('next').NextConfig} */
-const isGithub = process.env.GITHUB_PAGES === 'production';
+const isGithub = process.env.GITHUB_PAGES;
 
 const nextConfig = {
     output: 'export',

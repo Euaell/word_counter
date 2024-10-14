@@ -3,12 +3,14 @@ import dynamic from 'next/dynamic';
 
 const WordCloud = dynamic(() => import('react-d3-cloud'), { ssr: false });
 
-type Word = { text: string; value: number };
+export type Word = { text: string; value: number };
 
 type Props = {
 	words: Word[];
 	width: number;
 	height: number;
+	onWordMouseOver?: (event: MouseEvent, d: Word) => void;
+	onWordMouseOut?: (event: MouseEvent, d: Word) => void;
 }
 
 const MAX_FONT_SIZE = 72;
@@ -17,8 +19,8 @@ const MAX_FONT_WEIGHT = 600;
 const MIN_FONT_WEIGHT = 300;
 const MAX_WORDS = 30;
 
-export const WordCloudComponent = forwardRef<HTMLDivElement, Props>(
-	({ words, width, height }, ref) => {
+const WordCloudComponentInner = forwardRef<HTMLDivElement, Props>(
+	({ words, width, height, onWordMouseOut, onWordMouseOver }, ref) => {
 		const sortedWords = useMemo(
 			() => [...words].sort((a, b) => b.value - a.value).slice(0, MAX_WORDS),
 			[words]
@@ -53,21 +55,6 @@ export const WordCloudComponent = forwardRef<HTMLDivElement, Props>(
 			[maxOccurrences, minOccurrences]
 		)
 
-		const onWordClick = useCallback((event: MouseEvent, d: Word) => {
-			console.log(event)
-			console.log(d)
-		}, [])
-
-		const onWordMouseOver = useCallback((event: MouseEvent, d: Word) => {
-			console.log(event)
-			console.log(d)
-		}, [])
-
-		const onWordMouseOut = useCallback((event: MouseEvent, d: Word) => {
-			console.log(event)
-			console.log(d)
-		}, [])
-
 
 		return (
 			<div ref={ref} className='overflow-hidden max-w-full max-h-full cursor-pointer'>
@@ -80,7 +67,6 @@ export const WordCloudComponent = forwardRef<HTMLDivElement, Props>(
 					font="Poppins"
 					rotate={0}
 					padding={2}
-					onWordClick={onWordClick}
 					onWordMouseOver={onWordMouseOver}
 					onWordMouseOut={onWordMouseOut}
 				/>
@@ -88,5 +74,7 @@ export const WordCloudComponent = forwardRef<HTMLDivElement, Props>(
 		)
 	}
 )
+	
+export const WordCloudComponent = React.memo(WordCloudComponentInner);
 
 WordCloudComponent.displayName = 'WordCloudComponent';

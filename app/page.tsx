@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import { WordCloudComponent } from '@/components/WordCloudComponent';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Word, WordCloudComponent } from '@/components/WordCloudComponent';
 import { getWordFrequencies } from '@/utils/textProcessing';
 
 export default function Home(): React.ReactElement {
@@ -12,9 +12,24 @@ export default function Home(): React.ReactElement {
 		setTextData(event.target.value);
 	}
 
-
 	// Process the text data to get word frequencies
 	const words = useMemo(() => getWordFrequencies(textData), [textData]);
+
+	// Tooltip state
+	const [tooltipContent, setTooltipContent] = useState<{ word: string; value: number } | null>(null);
+	const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+	const [tooltipVisible, setTooltipVisible] = useState(false);
+  
+	// Event handlers for word mouse over and out
+	const onWordMouseOver = useCallback((event: MouseEvent, d: Word) => {
+		setTooltipContent({ word: d.text, value: d.value });
+		setTooltipPosition({ x: event.clientX, y: event.clientY });
+		setTooltipVisible(true);
+	}, []);
+	
+	const onWordMouseOut = useCallback(() => {
+		setTooltipVisible(false);
+	}, []);
 
 	return (
 		<div className='p-5'>
@@ -23,16 +38,33 @@ export default function Home(): React.ReactElement {
 			<div className='flex flex-col md:flex-row mt-4 justify-around items-center gap-6'>
 
 				<div className='w-full md:w-2/5 h-[350px] md:h-[400px]'>
-					{words && words.length ? <WordCloudComponent words={words} width={350} height={400}  /> : 
+					{words && words.length ? 
+						<WordCloudComponent 
+							words={words}
+							width={350}
+							height={400}
+							onWordMouseOver={onWordMouseOver}
+							onWordMouseOut={onWordMouseOut}
+						/> 
+						: 
 						<div className='h-full flex justify-center items-center'>
 							<p className='text-amber-500'>No words to display</p>
 						</div>
 					}
+					{/* Tooltip */}
+					{tooltipVisible && tooltipContent && (
+						<div
+							className="fixed bg-gray-800 text-white text-sm rounded py-1 px-2 z-50 pointer-events-none"
+							style={{ top: tooltipPosition.y + 10, left: tooltipPosition.x + 10 }}
+						>
+							{tooltipContent.word}: {tooltipContent.value}
+						</div>
+					)}
 				</div>
 
-				<div className='w-full md:w-2/5 mt-4 md:mt-0 h-full'>
+				<div className='w-full md:w-2/5 mt-4 md:mt-0 h-full max-h-full'>
 					<textarea
-						className='w-full h-32 p-2 text-sm text-gray-900 bg-gray-100 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+						className='w-full h-32 max-h-full p-2 text-sm text-gray-900 bg-gray-100 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500'
 						value={textData}
 						onChange={handleChange}
 						placeholder='Enter your text here...'

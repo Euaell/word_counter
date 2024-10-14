@@ -15,21 +15,33 @@ export default function Home(): React.ReactElement {
 	// Process the text data to get word frequencies
 	const words = useMemo(() => getWordFrequencies(textData), [textData]);
 
+	const totalWordCount = useMemo(() => {
+		return words.reduce((sum, word) => sum + word.value, 0);
+	}, [words]);
+
 	// Tooltip state
-	const [tooltipContent, setTooltipContent] = useState<{ word: string; value: number } | null>(null);
+	const [tooltipContent, setTooltipContent] = useState<{ word: string; percentage: number } | null>(null);
 	const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 	const [tooltipVisible, setTooltipVisible] = useState(false);
   
 	// Event handlers for word mouse over and out
-	const onWordMouseOver = useCallback((event: MouseEvent, d: Word) => {
-		setTooltipContent({ word: d.text, value: d.value });
-		setTooltipPosition({ x: event.clientX, y: event.clientY });
-		setTooltipVisible(true);
-	}, []);
+	const onWordMouseOver = useCallback(
+		(event: MouseEvent, d: Word) => {
+			if (totalWordCount > 0) {
+				const percentage = (d.value / totalWordCount) * 100;
+				setTooltipContent({ word: d.text, percentage });
+			} else {
+				setTooltipContent({ word: d.text, percentage: 0 });
+			}
+			setTooltipPosition({ x: event.clientX, y: event.clientY });
+			setTooltipVisible(true);
+		},
+		[totalWordCount]
+	)
 	
 	const onWordMouseOut = useCallback(() => {
 		setTooltipVisible(false);
-	}, []);
+	}, [])
 
 	return (
 		<div className='p-5'>
@@ -57,7 +69,7 @@ export default function Home(): React.ReactElement {
 							className="fixed bg-gray-800 text-white text-sm rounded py-1 px-2 z-50 pointer-events-none"
 							style={{ top: tooltipPosition.y + 10, left: tooltipPosition.x + 10 }}
 						>
-							{tooltipContent.word}: {tooltipContent.value}
+							{tooltipContent.word}: {tooltipContent.percentage.toFixed(1)}%
 						</div>
 					)}
 				</div>

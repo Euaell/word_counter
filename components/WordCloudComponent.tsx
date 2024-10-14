@@ -35,8 +35,16 @@ const WordCloudComponentInner = forwardRef<HTMLDivElement, Props>(
 
 		const calculateFontSize = useCallback(
 			(wordOccurrences: number) => {
-				const normalizedValue =
-					(wordOccurrences - minOccurrences) / (maxOccurrences - minOccurrences || 1);
+				let normalizedValue;
+				if (maxOccurrences === minOccurrences) {
+					// Only one word or all words have the same frequency
+					normalizedValue = 1;
+				} else {
+					normalizedValue = (wordOccurrences - minOccurrences) / (maxOccurrences - minOccurrences);
+				}
+
+
+				console.log("normalizedValue", normalizedValue);
 				const fontSize =
 					MIN_FONT_SIZE + normalizedValue * (MAX_FONT_SIZE - MIN_FONT_SIZE);
 				return Math.round(fontSize);

@@ -82,7 +82,7 @@ const WordCloudComponentInner = forwardRef<HTMLDivElement, Props>(
 		)
 	}
 )
-	
-export const WordCloudComponent = React.memo(WordCloudComponentInner);
 
-WordCloudComponent.displayName = 'WordCloudComponent';
+WordCloudComponentInner.displayName = 'WordCloudComponent';
+
+export const WordCloudComponent = React.memo(WordCloudComponentInner);

@@ -51,7 +51,7 @@ export default function Home(): React.ReactElement {
 
 				<div className='w-full md:w-2/5 h-[350px] md:h-[400px]'>
 					{words && words.length ? 
-						<WordCloudComponent 
+						<WordCloudComponent
 							words={words}
 							width={350}
 							height={400}

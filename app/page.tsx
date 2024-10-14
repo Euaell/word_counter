@@ -22,8 +22,8 @@ export default function Home(): React.ReactElement {
 
 			<div className='flex flex-col md:flex-row mt-4 justify-around items-center gap-6'>
 
-				<div className='w-full md:w-2/5 h-[250px] md:h-[300px]'>
-					{words && words.length ? <WordCloudComponent words={words}  /> : 
+				<div className='w-full md:w-2/5 h-[350px] md:h-[400px]'>
+					{words && words.length ? <WordCloudComponent words={words} width={350} height={400}  /> : 
 						<div className='h-full flex justify-center items-center'>
 							<p className='text-amber-500'>No words to display</p>
 						</div>
@@ -40,15 +40,15 @@ export default function Home(): React.ReactElement {
 				</div>
 			</div>
 
-			<div className='mt-4'>
+			<div className='mt-4 text-gray-500 text-sm md:w-5/12'>
 				<p>
-					<strong>Instructions:</strong> Change the text data in the textarea to see the word cloud update in real-time.
+					<strong className='text-black'>Instructions:</strong> Change the text data in the textarea to see the word cloud update in real-time.
 				</p>
 
 				<p>
-					<strong>How it works:</strong> The text data is processed to get word frequencies, which are then visualized in a word cloud. The size of each word in the cloud is determined by its frequency in the text.
+					<strong className='text-black'>How it works:</strong> The text data is processed to get word frequencies, which are then visualized in a word cloud. The size of each word in the cloud is determined by its frequency in the text.
 				</p>
 			</div>
 		</div>
-	);
+	)
 }

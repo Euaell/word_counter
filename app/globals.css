@@ -8,21 +8,47 @@ body {
 
 /* width */
 ::-webkit-scrollbar {
-    width: 10px;
+	width: 10px;
 }
 
 /* Track */
 ::-webkit-scrollbar-track {
-    background: #f1f1f1;
+	background: #f1f1f1;
 }
 
 /* Handle */
 ::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 5px;
+	background: #888;
+	border-radius: 5px;
 }
 
 /* Handle on hover */
 ::-webkit-scrollbar-thumb:hover {
-    background: #555;
+	background: #555;
+}
+
+.tooltip {
+	position: relative;
+	display: inline-block;
+	cursor: pointer;
+}
+  
+.tooltip::after {
+	content: attr(data-tooltip);
+	position: absolute;
+	background-color: #555;
+	color: #fff;
+	text-align: center;
+	border-radius: 5px;
+	padding: 5px;
+	bottom: 100%; /* Position the tooltip above the text */
+	left: 50%;
+	margin-left: -60px;
+	opacity: 0;
+	transition: opacity 0.3s;
+	pointer-events: none;
+}
+  
+.tooltip:hover::after {
+	opacity: 1;
 }

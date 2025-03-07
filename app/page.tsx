@@ -41,8 +41,8 @@ export default function Home(): React.ReactElement {
 	const words = useMemo(() => 
 		getWordFrequencies(textData, {
 			includePercentages: true,
-			maxResults: 150,
-			minWordLength: 3
+			maxResults: 200, // Increased to allow more words in the cloud
+			minWordLength: 2  // Allow shorter words
 		}), 
 	[textData]);
 	
@@ -74,94 +74,105 @@ export default function Home(): React.ReactElement {
 	}, [])
 
 	return (
-		<div className='p-5'>
-			<h1 className='text-3xl font-bold'>Word Counter Cloud</h1>
+		<div className='p-5 max-w-7xl mx-auto'>
+			<h1 className='text-3xl font-bold mb-6'>Word Counter Cloud</h1>
 
-			<div className='flex flex-col md:flex-row mt-4 justify-around items-start gap-6'>
+			<div className='flex flex-col lg:flex-row gap-8'>
+				{/* Left column - Word Cloud */}
+				<div className='w-full lg:w-1/2'>
+					<div className='bg-white rounded-lg shadow-md p-4 mb-6'>
+						<h2 className='text-xl font-semibold mb-4'>Word Cloud Visualization</h2>
+						<div className='h-[450px] relative'>
+							{isLoading ? (
+								<div className='h-full flex justify-center items-center'>
+									<div className='animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500'></div>
+								</div>
+							) : words && words.length ? (
+								<WordCloudComponent
+									words={words}
+									width={550}
+									height={450}
+									onWordMouseOver={onWordMouseOver}
+									onWordMouseOut={onWordMouseOut}
+								/> 
+							) : (
+								<div className='h-full flex justify-center items-center'>
+									<p className='text-amber-500'>No words to display</p>
+								</div>
+							)}
+							{/* Tooltip */}
+							{tooltipVisible && tooltipContent && (
+								<div
+									className="fixed bg-gray-800 text-white text-sm rounded py-1 px-2 z-50 pointer-events-none"
+									style={{ top: tooltipPosition.y + 10, left: tooltipPosition.x + 10 }}
+								>
+									{tooltipContent.word}: {tooltipContent.percentage.toFixed(1)}%
+								</div>
+							)}
+						</div>
+					</div>
 
-				<div className='w-full md:w-2/5 h-[350px] md:h-[400px] relative'>
-					{isLoading ? (
-						<div className='h-full flex justify-center items-center'>
-							<div className='animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500'></div>
-						</div>
-					) : words && words.length ? (
-						<WordCloudComponent
-							words={words}
-							width={350}
-							height={400}
-							onWordMouseOver={onWordMouseOver}
-							onWordMouseOut={onWordMouseOut}
-						/> 
-					) : (
-						<div className='h-full flex justify-center items-center'>
-							<p className='text-amber-500'>No words to display</p>
-						</div>
-					)}
-					{/* Tooltip */}
-					{tooltipVisible && tooltipContent && (
-						<div
-							className="fixed bg-gray-800 text-white text-sm rounded py-1 px-2 z-50 pointer-events-none"
-							style={{ top: tooltipPosition.y + 10, left: tooltipPosition.x + 10 }}
-						>
-							{tooltipContent.word}: {tooltipContent.percentage.toFixed(1)}%
-						</div>
+					{/* Sentiment Visualizer */}
+					{words.length > 0 && (
+						<SentimentVisualizer sentimentScore={textAnalysis.sentimentScore} />
 					)}
 				</div>
 
-				<div className='w-full md:w-3/5 mt-4 md:mt-0 h-full max-h-full'>
-					<div className='mb-4 flex flex-col gap-2'>
-						<div className='flex items-center gap-2'>
-							<button 
-								onClick={handleBrowseClick}
-								className='px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors'
-							>
-								Upload Text File
-							</button>
-							<input
-								type="file"
-								ref={fileInputRef}
-								onChange={handleFileUpload}
-								accept=".txt,.md,.csv"
-								className='hidden'
-							/>
-							{textData && (
+				{/* Right column - Text input and statistics */}
+				<div className='w-full lg:w-1/2'>
+					<div className='bg-white rounded-lg shadow-md p-4 mb-6'>
+						<h2 className='text-xl font-semibold mb-4'>Text Input</h2>
+						<div className='mb-4 flex flex-col gap-2'>
+							<div className='flex items-center gap-2'>
 								<button 
-									onClick={() => setTextData('')}
-									className='px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors'
+									onClick={handleBrowseClick}
+									className='px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors'
 								>
-									Clear
+									Upload Text File
 								</button>
-							)}
+								<input
+									type="file"
+									ref={fileInputRef}
+									onChange={handleFileUpload}
+									accept=".txt,.md,.csv"
+									className='hidden'
+								/>
+								{textData && (
+									<button 
+										onClick={() => setTextData('')}
+										className='px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors'
+									>
+										Clear
+									</button>
+								)}
+							</div>
+							<p className='text-xs text-gray-500'>Supported formats: .txt, .md, .csv</p>
 						</div>
-						<p className='text-xs text-gray-500'>Supported formats: .txt, .md, .csv</p>
-					</div>
 
-					<textarea
-						className='w-full h-32 max-h-full p-2 text-sm text-gray-900 bg-gray-100 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-						value={textData}
-						onChange={handleChange}
-						placeholder='Enter your text here or upload a file...'
-					/>
+						<textarea
+							className='w-full h-40 p-3 text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+							value={textData}
+							onChange={handleChange}
+							placeholder='Enter your text here or upload a file...'
+						/>
+					</div>
 					
-					{/* Analysis Panels */}
+					{/* Statistics Panel */}
 					{words.length > 0 && (
-						<div className="mt-4 space-y-4">
-							<StatisticsPanel words={words} originalText={textData} />
-							
-							{/* Sentiment Visualizer */}
-							<SentimentVisualizer sentimentScore={textAnalysis.sentimentScore} />
-						</div>
+						<StatisticsPanel words={words} originalText={textData} />
 					)}
 				</div>
 			</div>
 
-			<div className='mt-6 text-gray-500 text-sm md:w-5/12'>
-				<p>
-					<strong className='text-black'>Instructions:</strong> Change the text data in the textarea to see the word cloud update in real-time.
+			<div className='mt-8 text-gray-600 text-sm border-t pt-4'>
+				<h3 className='font-semibold text-gray-800 mb-2'>How It Works</h3>
+				<p className='mb-2'>
+					This tool analyzes text to create a visual representation of word frequencies. The size and color of each word in the cloud 
+					indicates its frequency in the text. More frequent words appear larger and in warmer colors.
 				</p>
-
 				<p>
-					<strong className='text-black'>How it works:</strong> The text data is processed to get word frequencies, which are then visualized in a word cloud. The size of each word in the cloud is determined by its frequency in the text.
+					The analysis includes readability metrics using the Flesch-Kincaid formulas, sentiment analysis, and identification of common word pairs.
+					Upload a text file or paste content to see the analysis in real-time.
 				</p>
 			</div>
 		</div>

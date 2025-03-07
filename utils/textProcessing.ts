@@ -106,6 +106,31 @@ function getRawTokens(text: string): string[] {
 }
 
 /**
+ * Count unique words in text without filtering stopwords or applying length restrictions
+ * 
+ * @param text The input text
+ * @returns Number of unique words
+ */
+function countUniqueWords(text: string): number {
+	if (!text) return 0;
+	
+	// Convert to lowercase and normalize whitespace
+	const normalizedText = text.toLowerCase().trim();
+	
+	// Replace certain characters with spaces to ensure proper word boundaries
+	const spacedText = normalizedText
+		.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, ' ') // Replace punctuation with spaces
+		.replace(/\s{2,}/g, ' ');                     // Replace multiple spaces with single space
+	
+	// Split into words and filter out empty strings
+	const words = spacedText.split(/\s+/).filter(word => word.length > 0);
+	
+	// Count unique words using a Set
+	const uniqueWords = new Set(words);
+	return uniqueWords.size;
+}
+
+/**
  * Get sentences for readability analysis
  * Handles various end-of-sentence punctuation and edge cases
  */
@@ -333,7 +358,7 @@ export function analyzeText(text: string): TextAnalysisResult {
 	return {
 		wordFrequencies,
 		totalWords: rawTokens.length,
-		uniqueWords: wordFrequencies.length,
+		uniqueWords: countUniqueWords(text),
 		averageWordLength: calculateAverageWordLength(rawTokens),
 		sentimentScore: calculateSentiment(tokens),
 		readability: calculateReadability(text),

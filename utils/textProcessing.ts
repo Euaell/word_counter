@@ -43,13 +43,23 @@ export interface WordFrequency {
 	percentage?: number;
 }
 
+// Readability metrics interface
+export interface ReadabilityMetrics {
+	fleschReadingEase: number;        // 0-100 scale (higher is easier to read)
+	fleschKincaidGradeLevel: number;  // US grade level
+	averageSentenceLength: number;    // Words per sentence
+	averageWordLength: number;        // Characters per word
+	totalSyllables: number;           // Total syllables in text
+	averageSyllablesPerWord: number;  // Average syllables per word
+}
+
 export interface TextAnalysisResult {
 	wordFrequencies: WordFrequency[];
 	totalWords: number;
 	uniqueWords: number;
 	averageWordLength: number;
 	sentimentScore: number; // -1 to 1 scale
-	readabilityScore: number; // 0-100 scale (higher is easier to read)
+	readability: ReadabilityMetrics;
 	topBigrams: { text: string; value: number }[];
 }
 
@@ -155,8 +165,8 @@ export function getWordFrequencies(
 	}
 	
 	// Convert to array and sort by frequency (highest first)
-	let result = Object.entries(wordCount)
-		.map(([text, value]) => ({ text, value }))
+	let result: WordFrequency[] = Object.entries(wordCount)
+		.map(([text, value]) => ({ text, value, percentage: 0 }))
 		.sort((a, b) => b.value - a.value);
 	
 	// Limit results if needed
@@ -207,21 +217,101 @@ function calculateSentiment(tokens: string[]): number {
 	return (positiveCount - negativeCount) / total;
 }
 
-// Calculate readability score (simplified Flesch Reading Ease)
-function calculateReadability(text: string): number {
+/**
+ * Count syllables in a word using English pronunciation rules
+ * This is a heuristic approach as English has many exceptions
+ * 
+ * @param word The word to count syllables for
+ * @returns The estimated syllable count
+ */
+function countSyllables(word: string): number {
+	if (!word) return 0;
+	
+	// Convert to lowercase and remove non-alphabetic characters
+	word = word.toLowerCase().replace(/[^a-z]/g, '');
+	
+	// Special cases
+	if (word.length <= 3) return 1;
+	
+	// Remove trailing 'e' as it's often silent
+	word = word.replace(/e$/, '');
+	
+	// Count vowel groups (consecutive vowels count as one syllable)
+	const vowelGroups = word.match(/[aeiouy]+/g);
+	
+	// If no vowels found, assume one syllable
+	if (!vowelGroups) return 1;
+	
+	// Count the vowel groups (consecutive vowels count as one syllable)
+	let count = vowelGroups.length;
+	
+	// Apply some common English pronunciation adjustments
+	
+	// Words ending with 'ion' typically add a syllable
+	if (word.match(/ion$/)) count += 0.5;
+	
+	// Words with 'le' ending often form a syllable with the preceding consonant
+	if (word.match(/le$/)) count += 0.5;
+	
+	// Words ending with 'ed' often don't add a syllable
+	if (word.match(/ed$/)) count -= 0.5;
+	
+	// Ensure we return at least 1 syllable
+	return Math.max(1, Math.round(count));
+}
+
+/**
+ * Calculate detailed readability metrics for text
+ * Implements both Flesch Reading Ease and Flesch-Kincaid Grade Level formulas
+ * 
+ * @param text The text to analyze
+ * @returns Readability metrics
+ */
+function calculateReadability(text: string): ReadabilityMetrics {
+	// Get sentences and words
 	const sentences = getSentences(text);
 	const words = getRawTokens(text);
 	
-	if (sentences.length === 0 || words.length === 0) return 0;
+	// Handle empty text
+	if (sentences.length === 0 || words.length === 0) {
+		return {
+			fleschReadingEase: 0,
+			fleschKincaidGradeLevel: 0,
+			averageSentenceLength: 0,
+			averageWordLength: 0,
+			totalSyllables: 0,
+			averageSyllablesPerWord: 0
+		};
+	}
 	
+	// Calculate average sentence length (words per sentence)
 	const averageSentenceLength = words.length / sentences.length;
-	const averageWordLength = words.join('').length / words.length;
 	
-	// Simplified Flesch Reading Ease formula
-	const readabilityScore = 206.835 - (1.015 * averageSentenceLength) - (84.6 * averageWordLength / 5);
+	// Calculate average word length (characters per word)
+	const totalCharacters = words.join('').length;
+	const averageWordLength = totalCharacters / words.length;
 	
-	// Clamp between 0-100
-	return Math.max(0, Math.min(100, readabilityScore));
+	// Count syllables in each word
+	const totalSyllables = words.reduce((sum, word) => sum + countSyllables(word), 0);
+	const averageSyllablesPerWord = totalSyllables / words.length;
+	
+	// Calculate Flesch Reading Ease score
+	// Formula: 206.835 - 1.015 × (words/sentences) - 84.6 × (syllables/words)
+	const fleschReadingEase = 206.835 - (1.015 * averageSentenceLength) - (84.6 * averageSyllablesPerWord);
+	
+	// Calculate Flesch-Kincaid Grade Level
+	// Formula: 0.39 × (words/sentences) + 11.8 × (syllables/words) - 15.59
+	const fleschKincaidGradeLevel = (0.39 * averageSentenceLength) + (11.8 * averageSyllablesPerWord) - 15.59;
+	
+	// Clamp values to reasonable ranges
+	return {
+		fleschReadingEase: Math.max(0, Math.min(100, fleschReadingEase)),
+		fleschKincaidGradeLevel: Math.max(0, fleschKincaidGradeLevel),
+		averageSentenceLength,
+		averageWordLength,
+		totalSyllables,
+		averageSyllablesPerWord
+	};
 }
 
 // Calculate average word length
@@ -246,7 +336,7 @@ export function analyzeText(text: string): TextAnalysisResult {
 		uniqueWords: wordFrequencies.length,
 		averageWordLength: calculateAverageWordLength(rawTokens),
 		sentimentScore: calculateSentiment(tokens),
-		readabilityScore: calculateReadability(text),
+		readability: calculateReadability(text),
 		topBigrams: getBigrams(tokens)
 	};
 }

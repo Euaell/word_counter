@@ -37,7 +37,7 @@ A powerful text analysis application built with Next.js, React, TypeScript, and 
 
 1. Clone the repository
 ```bash
-git clone https://github.com/your-username/word-counter.git
+git clone https://github.com/Euaell/word_counter
 cd word-counter
 ```
 

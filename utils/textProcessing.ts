@@ -36,8 +36,15 @@ const negativeWords = new Set([
 	'annoying', 'frustrating', 'mediocre', 'inferior'
 ]);
 
+// Word frequency interface
+export interface WordFrequency {
+	text: string;
+	value: number;
+	percentage?: number;
+}
+
 export interface TextAnalysisResult {
-	wordFrequencies: { text: string; value: number }[];
+	wordFrequencies: WordFrequency[];
 	totalWords: number;
 	uniqueWords: number;
 	averageWordLength: number;
@@ -46,22 +53,125 @@ export interface TextAnalysisResult {
 	topBigrams: { text: string; value: number }[];
 }
 
-// Simple tokenizer function
-export function getTokens(text: string): string[] {
-	const lowerText = text.toLowerCase().replace(/[^a-z\s]/g, '');
-	const tokens = lowerText.split(/\s+/);
-	return tokens.filter((token) => token.length > 1 && !stopWords.has(token));
+/**
+ * Process text to extract and normalize tokens with proper handling of
+ * punctuation, contractions, and special characters.
+ * 
+ * @param text Input text to tokenize
+ * @param removeStopWords Whether to filter out common stop words
+ * @returns Array of normalized tokens
+ */
+export function tokenizeText(text: string, removeStopWords: boolean = true): string[] {
+	// Handle empty input
+	if (!text || typeof text !== 'string') return [];
+	
+	// Convert to lowercase and normalize whitespace
+	const normalizedText = text.toLowerCase().trim();
+	
+	// Replace certain characters with spaces to ensure proper word boundaries
+	const spacedText = normalizedText
+		.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, ' ') // Replace punctuation with spaces
+		.replace(/\s{2,}/g, ' ');                     // Replace multiple spaces with single space
+	
+	// Split into words and filter
+	const words = spacedText.split(/\s+/).filter(word => {
+		// Remove empty strings and single characters (except 'a' and 'i' which are valid words)
+		if (!word || (word.length === 1 && !['a', 'i'].includes(word))) return false;
+		
+		// Remove stop words if requested
+		if (removeStopWords && stopWords.has(word)) return false;
+		
+		return true;
+	});
+	
+	return words;
 }
 
-// Get raw tokens including stopwords for readability analysis
+/**
+ * Get raw tokens including stopwords for readability analysis
+ * This preserves all words for analysis purposes
+ */
 function getRawTokens(text: string): string[] {
-	const lowerText = text.toLowerCase().replace(/[^a-z\s.!?]/g, '');
-	return lowerText.split(/\s+/).filter(token => token.length > 0);
+	return tokenizeText(text, false);
 }
 
-// Get sentences for readability analysis
+/**
+ * Get sentences for readability analysis
+ * Handles various end-of-sentence punctuation and edge cases
+ */
 function getSentences(text: string): string[] {
-	return text.split(/[.!?]+/).filter(sentence => sentence.trim().length > 0);
+	if (!text) return [];
+	
+	// Look for sentence boundaries with various punctuation followed by whitespace or end of text
+	return text
+		.split(/[.!?]+(?=\s|$)/)
+		.map(s => s.trim())
+		.filter(s => s.length > 0);
+}
+
+/**
+ * Calculate word frequency from text with advanced options
+ * 
+ * @param text Input text
+ * @param options Optional configuration
+ * @returns Array of word frequency objects sorted by frequency
+ */
+export function getWordFrequencies(
+	text: string,
+	options: {
+		maxResults?: number;
+		includePercentages?: boolean;
+		caseSensitive?: boolean;
+		minWordLength?: number;
+	} = {}
+): WordFrequency[] {
+	const {
+		maxResults = 100,
+		includePercentages = false,
+		caseSensitive = false,
+		minWordLength = 2
+	} = options;
+	
+	// Handle empty input
+	if (!text) return [];
+	
+	// Tokenize the text
+	const tokens = tokenizeText(text);
+	
+	// Count word frequencies
+	const wordCount: Record<string, number> = {};
+	let totalWords = 0;
+	
+	for (const token of tokens) {
+		// Apply word length filter
+		if (token.length < minWordLength) continue;
+		
+		// Handle case sensitivity
+		const key = caseSensitive ? token : token.toLowerCase();
+		
+		// Increment counter
+		wordCount[key] = (wordCount[key] || 0) + 1;
+		totalWords++;
+	}
+	
+	// Convert to array and sort by frequency (highest first)
+	let result = Object.entries(wordCount)
+		.map(([text, value]) => ({ text, value }))
+		.sort((a, b) => b.value - a.value);
+	
+	// Limit results if needed
+	if (maxResults > 0) {
+		result = result.slice(0, maxResults);
+	}
+	
+	// Calculate percentages if requested
+	if (includePercentages && totalWords > 0) {
+		result.forEach(item => {
+			item.percentage = (item.value / totalWords) * 100;
+		});
+	}
+	
+	return result;
 }
 
 // Calculate bigrams (pairs of adjacent words)
@@ -121,23 +231,14 @@ function calculateAverageWordLength(tokens: string[]): number {
 	return totalLength / tokens.length;
 }
 
-// Main function to get word frequencies
-export function getWordFrequencies(text: string): { text: string; value: number }[] {
-	const tokens = getTokens(text);
-	const wordCounts: Record<string, number> = {};
-  
-	tokens.forEach((token) => {
-		wordCounts[token] = (wordCounts[token] || 0) + 1;
-	})
-
-	return Object.entries(wordCounts).map(([text, value]) => ({ text, value }));
-}
-
 // Comprehensive text analysis
 export function analyzeText(text: string): TextAnalysisResult {
-	const tokens = getTokens(text);
+	const tokens = tokenizeText(text);
 	const rawTokens = getRawTokens(text);
-	const wordFrequencies = getWordFrequencies(text);
+	const wordFrequencies = getWordFrequencies(text, { 
+		includePercentages: true,
+		maxResults: 150
+	});
 	
 	return {
 		wordFrequencies,

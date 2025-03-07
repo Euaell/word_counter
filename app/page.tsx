@@ -38,7 +38,14 @@ export default function Home(): React.ReactElement {
 	}, []);
 
 	// Process the text data to get word frequencies and analysis
-	const words = useMemo(() => getWordFrequencies(textData), [textData]);
+	const words = useMemo(() => 
+		getWordFrequencies(textData, {
+			includePercentages: true,
+			maxResults: 150,
+			minWordLength: 3
+		}), 
+	[textData]);
+	
 	const textAnalysis = useMemo(() => analyzeText(textData), [textData]);
 
 	const totalWordCount = useMemo(() => {
@@ -53,12 +60,9 @@ export default function Home(): React.ReactElement {
 	// Event handlers for word mouse over and out
 	const onWordMouseOver = useCallback(
 		(event: MouseEvent, d: Word) => {
-			if (totalWordCount > 0) {
-				const percentage = (d.value / totalWordCount) * 100;
-				setTooltipContent({ word: d.text, percentage });
-			} else {
-				setTooltipContent({ word: d.text, percentage: 0 });
-			}
+			// Use percentage if available, otherwise calculate it
+			const percentage = d.percentage ?? ((d.value / totalWordCount) * 100);
+			setTooltipContent({ word: d.text, percentage });
 			setTooltipPosition({ x: event.clientX, y: event.clientY });
 			setTooltipVisible(true);
 		},

@@ -1,9 +1,10 @@
 import React, { forwardRef, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
+import { WordFrequency } from '@/utils/textProcessing';
 
 const WordCloud = dynamic(() => import('react-d3-cloud'), { ssr: false });
 
-export type Word = { text: string; value: number };
+export type Word = WordFrequency;
 
 type Props = {
 	words: Word[];
@@ -43,8 +44,6 @@ const WordCloudComponentInner = forwardRef<HTMLDivElement, Props>(
 					normalizedValue = (wordOccurrences - minOccurrences) / (maxOccurrences - minOccurrences);
 				}
 
-
-				console.log("normalizedValue", normalizedValue);
 				const fontSize =
 					MIN_FONT_SIZE + normalizedValue * (MAX_FONT_SIZE - MIN_FONT_SIZE);
 				return Math.round(fontSize);
@@ -63,6 +62,13 @@ const WordCloudComponentInner = forwardRef<HTMLDivElement, Props>(
 			[maxOccurrences, minOccurrences]
 		)
 
+		// Optional color function based on word frequency
+		const colorFunction = useCallback((word: Word) => {
+			const normalizedValue = (word.value - minOccurrences) / (maxOccurrences - minOccurrences || 1);
+			// Generate a color from blue to red based on frequency
+			const hue = 240 - normalizedValue * 200; // 240 is blue, 0 is red
+			return `hsl(${hue}, 70%, 50%)`;
+		}, [minOccurrences, maxOccurrences]);
 
 		return (
 			<div ref={ref} className='overflow-hidden max-w-full max-h-full cursor-pointer'>
@@ -70,6 +76,7 @@ const WordCloudComponentInner = forwardRef<HTMLDivElement, Props>(
 					data={sortedWords}
 					fontSize={(word) => calculateFontSize(word.value)}
 					fontWeight={(word) => calculateFontWeight(word.value)}
+					fill={(word) => colorFunction(word)}
 					width={width}
 					height={height}
 					font="Poppins"
